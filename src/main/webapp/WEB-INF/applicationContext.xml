@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:task="http://www.springframework.org/schema/task" xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+		http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.2.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+                http://www.springframework.org/schema/context 
+                http://www.springframework.org/schema/context/spring-context.xsd
+                http://www.springframework.org/schema/data/jpa http://www.springframework.org/schema/data/jpa/spring-jpa.xsd">
+	
+    
+    <context:annotation-config/>
+    <context:component-scan base-package="monitoring.pets.processor" />    
+
+    <bean
+        class="org.springframework.context.annotation.CommonAnnotationBeanPostProcessor"/>
+    
+    <!--Archivo propiedades-->
+    <context:property-placeholder location="file:${TOMCAT_RESOURCES}/config/processor/application.properties"/>
+    
+    <bean id="javaMailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+        <property name="host">
+            <value>smtp.gmail.com</value>
+        </property>
+        <property name="port">
+            <value>25</value>
+        </property>
+        <property name="protocol">
+            <value>smtp</value>
+        </property>
+        <property name="username">
+            <value>monitoring.pets.sender</value>
+        </property>
+        <property name="password">
+            <value>1Monitoring</value>
+        </property>
+        <property name="javaMailProperties">
+            <props>
+                <prop key="mail.smtp.auth">true</prop>
+                <prop key="mail.smtp.starttls.enable">true</prop>
+                <prop key="mail.smtp.quitwait">false</prop>                
+            </props>
+        </property>
+    </bean>
+    
+    <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+        <property name="entityManagerFactory" ref="entityManagerFactory" />
+        <property name="jpaDialect">
+            <bean class="org.springframework.orm.jpa.vendor.HibernateJpaDialect" />
+        </property>
+    </bean>
+
+    <bean id="entityManagerFactory"
+          class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <property name="jpaVendorAdapter" ref="jpaVendorAdapter" />
+        <property name="packagesToScan">
+            <array>
+                <value>monitoring.pets.processor.model</value>               
+            </array>
+        </property>        
+    </bean>
+
+    <!-- Data Source -->
+    <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+          destroy-method="close">
+        <property name="driverClassName" value="${spring.datasource.driver-class-name}" />
+        <property name="url" value="${spring.datasource.url}" />
+        <property name="username" value="${spring.datasource.username}" />
+        <property name="password" value="${spring.datasource.password}" />
+    </bean>
+
+    <bean id="jpaVendorAdapter"
+          class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter">
+        <property name="showSql" value="false" />
+        <property name="database" value="POSTGRESQL" />
+        <property name="generateDdl" value="false" />
+    </bean>
+
+    <jpa:repositories base-package="monitoring.pets.processor.repositories" />
+
+    <!-- Task driven -->	
+   <task:executor id="executor" pool-size="30"/>
+   <task:annotation-driven  executor="executor"/>
+
+</beans>
